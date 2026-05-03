@@ -1,7 +1,7 @@
 const sanityClient = require('@sanity/client');
-const sanityKey = process.env.SANITY_TOKEN
-const sanityDataset = process.env.SANITY_DATASET
-sanityProjectId = process.env.SANITY_PROJECT_ID
+const sanityKey = process.env.SANITY_AUTH_KEY
+const sanityDataset = process.env.DATASET
+sanityProjectId = process.env.PROJECT_ID
 
 const client = sanityClient({
     projectId: sanityProjectId,
