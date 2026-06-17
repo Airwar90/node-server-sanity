@@ -5,7 +5,7 @@ const cors = require('cors')
 const { errorHandler } = require('./middleware/errorMiddleware')
 
 const port = process.env.PORT || 5000
-console.log(process.env.SANITY_PROJECT_ID)
+
 const app = express()
 
 app.use(cors({
