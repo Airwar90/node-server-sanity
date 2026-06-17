@@ -9,7 +9,11 @@ console.log(process.env.SANITY_PROJECT_ID)
 const app = express()
 
 app.use(cors({
-    origin: process.env.CLIENT_URL
+    origin: 
+    [
+        process.env.CLIENT_URL,
+        process.env.LOCAL_CLIENT_URL
+    ]
 }))
 app.use(express.json())
 app.use(express.urlencoded({ extended: false }))
