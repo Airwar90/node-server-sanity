@@ -17,7 +17,8 @@ const createLocation = async (req, res, next) => {
   }
   const newBody = { 
     ...req.body, 
-    slug: {_type: 'slug', current: createSlug(req.body.placeName) } 
+    slug: {_type: 'slug', current: createSlug(req.body.placeName) },
+    isPublished: false 
   }
   try {
     const result = await client.create(newBody)
