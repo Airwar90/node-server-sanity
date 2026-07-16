@@ -19,7 +19,7 @@ app.use(express.json({limit: '10mb'}))
 app.use(express.urlencoded({ limit: '10mb', extended: false }))
 
 //NEW ROUTES
-app.use('/api/locations', require('./routes/locationRoutes'))
+//app.use('/api/locations', require('./routes/locationRoutes'))
 app.use('/api/services', require('./routes/serviceRoutes'))
 app.use('/api/uploadImage', require('./routes/imageRoutes'))
 

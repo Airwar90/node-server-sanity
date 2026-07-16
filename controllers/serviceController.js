@@ -1,31 +1,70 @@
 const client = require('../config/sanityConfig')
+const { buildLocation } = require('./locationController')
 
 // @desc Create Service
 // @route POST /api/services
+function createSlug(text) {
+  return text
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .slice(0,96)
+}
+
+const SERVICE_FIELDS = [
+  'name', 'serviceType', 'activityArea', 'shortDescription', 'accessibilityInfo',
+  'contactInfo', 'abilityLevels', 'listOfServices', 'insurance', 'seasonalSchedule',
+  'longerDescription', 'urls', 'qualifications', 'safetyForGroups', 'safetyForBusinesses',
+  'isAccessible', 'isBeginnerFriendly', 'image',
+]
+const pick = (obj, allowed) =>
+  Object.fromEntries(Object.entries(obj ?? {}).filter(([k]) => allowed.includes(k)))
+
 const createService = async (req, res, next) => {
-  function createSlug(text) {
-    return text
-      .toLowerCase()
-      .trim()
-      .replace(/[^\w\s-]/g, '')
-      .replace(/\s+/g, '-')
-      .replace(/-+/g, '-')
-      .slice(0,96)
-  }
-  if(typeof req.body.name !== 'string' || !req.body.name.trim()) {
+  const body = req.body
+  if(typeof body.name !== 'string' || !body.name.trim()) {
     return res.status(400).json({error: "Name is required and it must be string"})
   }
-  console.log("createService hit", JSON.stringify(req.body, null, 2))
-  const newBody = { 
-    ...req.body, 
-    slug: {_type: 'slug', current: createSlug(req.body.name) }, 
-    isPublished: false 
-  }  
+    if (!Array.isArray(body.serviceType) || body.serviceType.length === 0) {
+    return res.status(400).json({ error: 'At least one service type is required' })
+  }
+  if (!Array.isArray(body.activelocations) || body.activelocations.length === 0) {
+    return res.status(400).json({ error: 'At least one active location is required' })
+  }
+
+  const locationDocs = []
+  const locationRefs = []
+
+  for(const raw of body.activelocations) {
+    const {doc, reference, error} = buildLocation(raw, body.name.trim())
+    if (error) {
+      return res.status(400).json({error})
+    }
+    locationDocs.push(doc)
+    locationRefs.push(reference)
+  }
+
+  
+  const service = {
+    ...pick(body, SERVICE_FIELDS),
+    _type: 'service',
+    slug: { _type: 'slug', current: createSlug(body.name) },
+    isPublished: false, //never from client
+    activelocations: locationRefs, //location references directly
+  }
+  
+  
   try {
-    const result = await client.create(newBody)
-    res.status(201).json(result)
+    const tx = client.transaction()
+    locationDocs.forEach((doc) => tx.create(doc))
+    tx.create(service)
+    const result = await tx.commit()
+    //result.documentIds contains every created id; the service is the last create
+    res.status(201).json({ id: result.documentIds[result.documentIds.length - 1] })
   } catch (error) {
-    console.log("Sanity error", error)
+    console.error('Sanity transaction error', error)
     next(error)
   }
 }
