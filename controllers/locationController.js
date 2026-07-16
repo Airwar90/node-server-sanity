@@ -15,6 +15,15 @@ const isInScotland = (lat, lng) =>
   lng >= SCOTLAND_BOUNDS.minLng &&
   lng <= SCOTLAND_BOUNDS.maxLng;
 
+  function createSlug(text) {
+  return text
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .slice(0,96)
+}
 
 function buildLocation(rawBody, serviceName) {
   if(typeof rawBody !== 'object' || rawBody === null) {
@@ -37,13 +46,15 @@ function buildLocation(rawBody, serviceName) {
   if(typeof rawBody.accessibilityDescription !== "string" || !rawBody.accessibilityDescription.trim()) {
     return {error: `Location ${rawBody.placeName} needs accessibility description`}
   }
+  const compositeName = `${serviceName} @ ${rawBody.placeName.trim()}`
   const _id = randomUUID();
   const doc = {
     _id,
     _type: 'activeLocation',
-    placeName: `${serviceName} @ ${rawBody.placeName.trim()}`,
+    placeName: compositeName,
     geopoint: {_type: 'geopoint', lat, lng},
-    accessibilityDescription: rawBody.accessibilityDescription.trim()
+    accessibilityDescription: rawBody.accessibilityDescription.trim(),
+    slug: {_type: 'slug', current: createSlug(compositeName)}
   }
 
   if (typeof rawBody.region === 'string' && rawBody.region.trim()) doc.region = rawBody.region.trim()
