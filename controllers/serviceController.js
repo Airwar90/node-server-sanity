@@ -19,6 +19,9 @@ const SERVICE_FIELDS = [
   'longerDescription', 'urls', 'qualifications', 'safetyForGroups', 'safetyForBusinesses',
   'isAccessible', 'isBeginnerFriendly', 'image',
 ]
+
+const SERVICE_TYPES_REQUIRING_LIST = ['business', 'coach']
+
 const pick = (obj, allowed) =>
   Object.fromEntries(Object.entries(obj ?? {}).filter(([k]) => allowed.includes(k)))
 
@@ -32,6 +35,10 @@ const createService = async (req, res, next) => {
   }
   if (!Array.isArray(body.activelocations) || body.activelocations.length === 0) {
     return res.status(400).json({ error: 'At least one active location is required' })
+  }
+  const needsServiceList = body.serviceType.some(t => SERVICE_TYPES_REQUIRING_LIST.includes(t))
+  if (needsServiceList && (!Array.isArray(body.listOfServices) || body.listOfServices.length === 0)) {
+    return res.status(400).json({ error: 'A List of Services is required for Coaches and Businesses' })
   }
 
   const locationDocs = []
