@@ -138,6 +138,44 @@ const getSearchMatches = async (req, res, next) => {
   }
 }
 
+//get services matching bookmark list
+
+const getBookmarks = async (req, res) => {
+  const {titles} = req.body;
+  console.log('bookmark request')
+  if(!Array.isArray(titles) || !titles.every(t => typeof t === "string")){
+    return res.status(400).json({error: "Bad bookmark request, invalid titles"})
+  }
+  
+  try {
+      const services =  await client.fetch(`*[_type == "service" && name in $titles]{
+        _id,
+        _type,
+        "slug": slug.current,
+        "type": serviceType[0],
+        "placeName": name,
+        "description": pt::text(shortDescription),
+        accessibilityInfo,
+        "imageUrl": image.asset->url,
+        "activelocations": activelocations[]->{
+          placeName,
+          what3words,
+          region,
+          accessibilityDescription,
+          "latitude": geopoint.lat,
+          "longitude": geopoint.lng
+        },
+        isAccessible,
+        isBeginnerFriendly
+      }`, {titles});
+      
+      res.json(services || []);
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({error: "Failed to load bookmarks"})
+    }
+};
+
 //get service by slug
 const getServiceBySlug = async (req, res, next) => {
   console.log('Fetching service by slug');
@@ -251,4 +289,4 @@ const deleteServiceBySlug = async (req, res, next) => {
   }
 }
 
-module.exports = { createService, getAllServices, getServiceBySlug, updateServiceBySlug, deleteServiceBySlug, getSearchMatches, SERVICE_FIELDS }
+module.exports = { createService, getAllServices, getBookmarks, getServiceBySlug, updateServiceBySlug, deleteServiceBySlug, getSearchMatches, SERVICE_FIELDS }

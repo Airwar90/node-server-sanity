@@ -1,12 +1,13 @@
 const express = require('express')
 const router = express.Router()
-const { createService, getAllServices, getServiceBySlug, updateServiceBySlug, deleteServiceBySlug, getSearchMatches } = require('../controllers/serviceController')
+const { createService, getAllServices, getServiceBySlug, getBookmarks, updateServiceBySlug, deleteServiceBySlug, getSearchMatches } = require('../controllers/serviceController')
 
 //CREATE
 router.post('/', createService)
 //READ
-router.get('/', getAllServices)
+router.get('/all', getAllServices)
 router.get('/search/:query', getSearchMatches)
+router.post('/bookmarks', getBookmarks)
 router.get('/:slug', getServiceBySlug)
 //UPDATE
 router.put('/:slug', updateServiceBySlug)
