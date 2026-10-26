@@ -42,6 +42,7 @@ app.get('/api/debug-ip', (req, res) => {
 
 app.use('/api/services', writeLimiter, require('./routes/serviceRoutes'))
 app.use('/api/uploadImage', writeLimiter, require('./routes/imageRoutes'))
+app.use('/api/info', writeLimiter, require('./routes/infoRoutes'))
 
 app.use(errorHandler)
 

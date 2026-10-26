@@ -76,4 +76,217 @@ const createService = async (req, res, next) => {
   }
 }
 
-module.exports = { createService }
+//get all services
+const getAllServices = async (req, res, next) => {
+  console.log('Fetching all services');
+  try {
+    const query = `*[_type == "service" && isPublished == true]{
+      _id,
+      _type,
+      "slug": slug.current,
+      "type": serviceType[0],
+      "name": name, 
+      "description":  pt::text(shortDescription),
+      isAccessible,
+      isBeginnerFriendly,
+      "imageUrl": image.asset->url,
+      "activelocations": activelocations[]->{
+        placeName,
+        what3words,
+        region,
+        accessibilityDescription,
+        "latitude": geopoint.lat,
+        "longitude": geopoint.lng
+      }
+    }`
+    const services = await client.fetch(query)
+    res.status(200).json(services)
+  } catch (error) {
+    console.error('Error fetching services', error)
+    next(error)
+  }
+}
+//get search matches
+const getSearchMatches = async (req, res, next) => {
+  console.log('Fetching search matches');
+  try {
+    const { query } = req.params
+    const searchQuery = `*[_type == "service" && isPublished == true && (name match $query || description match $query || serviceType match $query || activityArea match $query || listOfServices[] match $query)]{
+      _id,
+      _type,
+      "slug": slug.current,
+      "type": serviceType[0],
+      "name": name,
+      "description": pt::text(shortDescription),
+      isAccessible,
+      isBeginnerFriendly,
+      "imageUrl": image.asset->url,
+      "activelocations": activelocations[]->{
+        placeName,
+        what3words,
+        region,
+        accessibilityDescription,
+        "latitude": geopoint.lat,
+        "longitude": geopoint.lng
+      }
+    }`
+    const services = await client.fetch(searchQuery, { query })
+    res.status(200).json(services)
+  } catch (error) {
+    console.error('Error fetching search matches', error)
+    next(error)
+  }
+}
+
+//get services matching bookmark list
+
+const getBookmarks = async (req, res) => {
+  const {titles} = req.body;
+  console.log('bookmark request')
+  if(!Array.isArray(titles) || !titles.every(t => typeof t === "string")){
+    return res.status(400).json({error: "Bad bookmark request, invalid titles"})
+  }
+  
+  try {
+      const services =  await client.fetch(`*[_type == "service" && name in $titles]{
+        _id,
+        _type,
+        "slug": slug.current,
+        "type": serviceType[0],
+        "placeName": name,
+        "description": pt::text(shortDescription),
+        accessibilityInfo,
+        "imageUrl": image.asset->url,
+        "activelocations": activelocations[]->{
+          placeName,
+          what3words,
+          region,
+          accessibilityDescription,
+          "latitude": geopoint.lat,
+          "longitude": geopoint.lng
+        },
+        isAccessible,
+        isBeginnerFriendly
+      }`, {titles});
+      
+      res.json(services || []);
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({error: "Failed to load bookmarks"})
+    }
+};
+
+//get service by slug
+const getServiceBySlug = async (req, res, next) => {
+  console.log('Fetching service by slug');
+  try {
+    const { slug } = req.params
+    const query = `*[_type == "service" && slug.current == $slug][0]{
+            _id,
+            "type": serviceType[0],
+            "placeName": name,
+            safetyForBusinesses,
+            "description": pt::text(longerDescription),
+            "shortDescription": pt::text(shortDescription),
+            "qualifications": qualifications,
+            "contactInfo": {
+                "phoneNumber": contactInfo.phoneNumber,
+                "email": select(
+                    contactInfo.isEmailPublic == true => contactInfo.email,
+                    null
+                )
+            },
+            urls,
+            listOfServices[],
+            "accessibility": pt::text(accessibilityInfo),
+            "imageUrl": image.asset->url,
+            "activelocations": activelocations[]->{
+                placeName,
+                region,
+                "_id": _id,
+                "latitude": geopoint.lat,
+                "longitude": geopoint.lng,
+                accessibilityDescription,
+                what3words
+            }
+        }`
+    const service = await client.fetch(query, { slug })
+    if (!service) {
+      return res.status(404).json({ error: 'Service not found' })
+    }
+    res.status(200).json(service)
+  } catch (error) {
+    console.error('Error fetching service', error)
+    next(error)
+  }
+}
+
+//update service by slug
+const updateServiceBySlug = async (req, res, next) => {
+  console.log('Updating service by slug');
+  try {
+    const { slug } = req.params
+    const updates = req.body
+    const query = `*[_type == "service" && slug.current == $slug][0]{
+            _id,
+            "type": serviceType[0],
+            "placeName": name,
+            safetyForBusinesses,
+            "description": pt::text(longerDescription),
+            "shortDescription": pt::text(shortDescription),
+            "qualifications": qualifications,
+            "contactInfo": {
+                "phoneNumber": contactInfo.phoneNumber,
+                "email": select(
+                    contactInfo.isEmailPublic == true => contactInfo.email,
+                    null
+                )
+            },
+            urls,
+            listOfServices[],
+            "accessibility": pt::text(accessibilityInfo),
+            "imageUrl": image.asset->url,
+            "activelocations": activelocations[]->{
+                placeName,
+                region,
+                "_id": _id,
+                "latitude": geopoint.lat,
+                "longitude": geopoint.lng,
+                accessibilityDescription,
+                what3words
+            }
+        }`
+    const service = await client.fetch(query, { slug })
+    if (!service) {
+      return res.status(404).json({ error: 'Service not found' })
+    }
+    const updatedService = { ...service, ...updates }
+    const result = await client.patch(service._id).set(updatedService).commit()
+    res.status(200).json(result)
+  } catch (error) {
+    console.error('Error updating service', error)
+    next(error)
+  }
+}
+
+//delete service by slug
+const deleteServiceBySlug = async (req, res, next) => {
+  console.log('Deleting service by slug');
+  try {
+    const { slug } = req.params
+    const query = `*[_type == "service" && slug.current == $slug][0]{
+            _id
+        }`
+    const service = await client.fetch(query, { slug })
+    if (!service) {
+      return res.status(404).json({ error: 'Service not found' })
+    }
+    const result = await client.delete(service._id)
+    res.status(200).json(result)
+  } catch (error) {
+    console.error('Error deleting service', error)
+    next(error)
+  }
+}
+
+module.exports = { createService, getAllServices, getBookmarks, getServiceBySlug, updateServiceBySlug, deleteServiceBySlug, getSearchMatches, SERVICE_FIELDS }
