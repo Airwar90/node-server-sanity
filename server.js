@@ -1,6 +1,8 @@
 const express = require('express')
 require('dotenv').config()
 const cors = require('cors')
+// loaded after dotenv: @clerk/express reads CLERK_SECRET_KEY / CLERK_PUBLISHABLE_KEY on import
+const { clerkMiddleware } = require('@clerk/express')
 
 const { errorHandler } = require('./middleware/errorMiddleware')
 
@@ -8,13 +10,17 @@ const port = process.env.PORT || 5000
 
 const app = express()
 
+const allowedOrigins = [
+    process.env.CLIENT_URL,
+    process.env.LOCAL_CLIENT_URL
+].filter(Boolean)
+
 app.use(cors({
-    origin: 
-    [
-        process.env.CLIENT_URL,
-        process.env.LOCAL_CLIENT_URL
-    ]
+    origin: allowedOrigins
 }))
+
+app.use(clerkMiddleware({ authorizedParties: allowedOrigins }))
+
 app.use(express.json({limit: '10mb'}))
 app.use(express.urlencoded({ limit: '10mb', extended: false }))
 

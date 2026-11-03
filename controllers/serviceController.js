@@ -57,6 +57,7 @@ const createService = async (req, res, next) => {
   const service = {
     ...pick(body, SERVICE_FIELDS),
     _type: 'service',
+    ownerId: req.userId, //Clerk user id from the verified session token (set by requireUser), never from the client
     slug: { _type: 'slug', current: createSlug(body.name) },
     isPublished: false, //never from client
     activelocations: locationRefs, //location references directly
@@ -226,7 +227,11 @@ const updateServiceBySlug = async (req, res, next) => {
   console.log('Updating service by slug');
   try {
     const { slug } = req.params
-    const updates = req.body
+    //fields that must never be set through this endpoint: ownership, moderation status and document identity
+    const PROTECTED_FIELDS = ['ownerId', 'isPublished', '_id', '_type', '_rev', 'slug']
+    const updates = Object.fromEntries(
+      Object.entries(req.body ?? {}).filter(([key]) => !PROTECTED_FIELDS.includes(key))
+    )
     const query = `*[_type == "service" && slug.current == $slug][0]{
             _id,
             "type": serviceType[0],

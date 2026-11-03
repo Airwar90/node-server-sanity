@@ -10,6 +10,7 @@
   "author": "Neil Davidson",
   "license": "MIT",
   "dependencies": {
+    "@clerk/express": "^2.1.86",
     "@sanity/client": "^3.3.0",
     "concurrently": "^7.1.0",
     "cors": "^2.8.6",
