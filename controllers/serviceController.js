@@ -140,7 +140,7 @@ const getSearchMatches = async (req, res, next) => {
 
 //get services matching bookmark list
 
-const getBookmarks = async (req, res) => {
+const getBookmarks = async (req, res, next) => {
   const {titles} = req.body;
   console.log('bookmark request')
   if(!Array.isArray(titles) || !titles.every(t => typeof t === "string")){
@@ -171,8 +171,7 @@ const getBookmarks = async (req, res) => {
       
       res.json(services || []);
     } catch (err) {
-      console.error(err);
-      res.status(500).json({error: "Failed to load bookmarks"})
+      next(err)
     }
 };
 

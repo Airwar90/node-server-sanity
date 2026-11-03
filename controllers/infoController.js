@@ -26,7 +26,7 @@ const infoQuery = `*[_type == "safetyInfo"] | order(mainSectionNumber asc){
     }
 }`
 
-const getInfo = async (req, res) => {    
+const getInfo = async (req, res, next) => {    
     const type = INFO_TYPES[req.params.page];
     console.log(`${type} info request`)
     if(!type) return res.status(404).json({error: "Page not Found"})
@@ -34,8 +34,7 @@ const getInfo = async (req, res) => {
         const info = await client.fetch(infoQuery, { type })
         res.status(200).json(info)
     } catch (err){
-        console.error(`Error fetching ${type} information`, err)
-        res.status(500).json({error: `Error fetching ${type} information`})
+        next(err)
     }
 }
 
