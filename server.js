@@ -20,15 +20,7 @@ app.use(express.urlencoded({ limit: '10mb', extended: false }))
 
 app.set('trust proxy', 3)
 
-const rateLimit = require('express-rate-limit')
-
-const writeLimiter = rateLimit({
-    windowMs: 15*60*1000, //15 minutes
-    limit: 20, //number of requests per IP per time window, this should be 10 as each addService request uploads 1 image and then sends 1 form
-    standardHeaders: true,
-    legacyHeaders: false,
-    message: {error: 'Too many requests, try again later'},
-})
+// Rate limits are applied per route (reads vs writes) - see middleware/rateLimiters.js
 
 //temporary debug line to check if trust proxy config is correct
 app.get('/api/debug-ip', (req, res) => {
@@ -40,8 +32,9 @@ app.get('/api/debug-ip', (req, res) => {
   })
 })
 
-app.use('/api/services', writeLimiter, require('./routes/serviceRoutes'))
-app.use('/api/uploadImage', writeLimiter, require('./routes/imageRoutes'))
+app.use('/api/services', require('./routes/serviceRoutes'))
+app.use('/api/uploadImage', require('./routes/imageRoutes'))
+app.use('/api/info', require('./routes/infoRoutes'))
 
 app.use(errorHandler)
 

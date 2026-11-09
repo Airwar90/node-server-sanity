@@ -8,7 +8,7 @@ const client = sanityClient({
     dataset: sanityDataset,
     apiVersion: "2022-05-11",
     token: sanityKey,
-    useCdn: true
+    useCdn: false,
 })
 
 module.exports = client;
